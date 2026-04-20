@@ -1,0 +1,67 @@
+const express  = require('express');
+const router   = express.Router();
+const Product  = require('../models/Product');
+const { protect, adminOnly } = require('../middleware/authMiddleware');
+
+// ─── GET /api/products  — both admin and staff can view ──────────────────────
+router.get('/', protect, async (req, res) => {
+  try {
+    const products = await Product.find().sort({ createdAt: -1 });
+    res.json(products);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// ─── GET /api/products/:id  — both admin and staff can view ──────────────────
+router.get('/:id', protect, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// ─── POST /api/products  — both admin and staff can add ──────────────────────
+router.post('/', protect, async (req, res) => {
+  try {
+    const { name, quantity, category, price, description } = req.body;
+    if (!name || quantity === undefined || !category || !price)
+      return res.status(400).json({ message: 'name, quantity, category, price are required' });
+
+    const product = await Product.create({ name, quantity, category, price, description });
+    res.status(201).json(product);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// ─── PUT /api/products/:id  — both admin and staff can update ────────────────
+router.put('/:id', protect, async (req, res) => {
+  try {
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      { new: true, runValidators: true }
+    );
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    res.json(product);
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// ─── DELETE /api/products/:id  — ADMIN ONLY ──────────────────────────────────
+router.delete('/:id', protect, adminOnly, async (req, res) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    res.json({ message: 'Product deleted' });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+module.exports = router;
