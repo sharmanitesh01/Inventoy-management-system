@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import Login     from './components/Login';
+import Login          from './components/Login';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import Sidebar   from './components/Sidebar';
 import Navbar    from './components/Navbar';
 import Dashboard from './components/Dashboard';
@@ -7,6 +8,7 @@ import Products  from './components/Products';
 import Inventory from './components/Inventory';
 import Reports   from './components/Reports';
 import Settings  from './components/Settings';
+import StaffManagement from './components/StaffManagement';
 import './index.css';
 
 function App() {
@@ -24,17 +26,18 @@ function App() {
 
   // Called when login succeeds
   const handleLogin = (data) => {
+    login(data.user, data.token);
     setIsLoggedIn(true);
     setCurrentPage('dashboard');
   };
 
   // Called when logout button clicked
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('username');
-    setIsLoggedIn(false);
-  };
+ const { logout } = useAuth();
 
+const handleLogout = () => {
+  logout();
+  setIsLoggedIn(false);
+};
   // Render the correct page based on currentPage state
   const renderPage = () => {
     switch (currentPage) {
@@ -43,6 +46,7 @@ function App() {
       case 'inventory': return <Inventory />;
       case 'reports':   return <Reports />;
       case 'settings':  return <Settings />;
+      case 'staff': return <StaffManagement />;
       default:          return <Dashboard />;
     }
   };
@@ -71,4 +75,12 @@ function App() {
   );
 }
 
-export default App;
+function AppWithAuth() {
+  return (
+    <AuthProvider>
+      <App />
+    </AuthProvider>
+  );
+}
+
+export default AppWithAuth;

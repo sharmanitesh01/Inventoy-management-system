@@ -177,13 +177,13 @@
   text-align: center;
 }
 
-.hint {
+/* .hint {
   text-align: center;
   color: var(--text-muted);
   font-size: 0.8rem;
   margin-top: 1rem;
   font-family: var(--font-mono);
-}
+} */
 
 /* ── LOADING SPINNER ────────────────────────────────────────────────── */
 .spinner {
@@ -194,4 +194,34 @@
   border-radius: 50%;
   animation: spin-slow 0.8s linear infinite;
   display: inline-block;
+}
+
+/* ── ROLE TOGGLE ────────────────────────────────────────────────────── */
+.role-toggle {
+  display: flex;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 1.5rem;
+  gap: 4px;
+}
+
+.role-btn {
+  flex: 1;
+  padding: 0.6rem 0;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.role-btn.active {
+  background: linear-gradient(135deg, #3b82f6, #06d6a0);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.35);
 }

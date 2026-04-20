@@ -1,32 +1,26 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { adminLogin, staffLogin } from '../services/api';
 import '../styles/login.css';
 
-function Login({ onLogin }) {
-  // State = variables that React watches for changes
+export default function Login() {
+  const { login } = useAuth();
+  const [role, setRole]         = useState('admin');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError]     = useState('');
-  const [loading, setLoading] = useState(false);
+  const [error, setError]       = useState('');
+  const [loading, setLoading]   = useState(false);
 
-  // Called when user clicks Login button
-  const handleLogin = async (e) => {
-    e.preventDefault(); // Prevent page reload
-    setLoading(true);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
     setError('');
-
+    setLoading(true);
     try {
-      // Send POST request to backend
-      const res = await axios.post('/api/auth/login', { username, password });
-      
-      // Save token in browser storage so we stay logged in
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('username', res.data.username);
-      
-      // Tell parent component (App.js) we are logged in
-      onLogin(res.data);
+      const fn  = role === 'admin' ? adminLogin : staffLogin;
+      const res = await fn({ username, password });
+      login(res.data.user, res.data.token);
     } catch (err) {
-      setError(err.response?.data?.message || 'Login failed. Try again.');
+      setError(err.response?.data?.message || 'Login failed');
     } finally {
       setLoading(false);
     }
@@ -34,73 +28,87 @@ function Login({ onLogin }) {
 
   return (
     <div className="login-page">
-      {/* Animated background blobs */}
+      {/* Background blobs — keep your existing animation */}
       <div className="blob blob-1" />
       <div className="blob blob-2" />
       <div className="blob blob-3" />
 
-      {/* 3D Floating cube decoration */}
+      {/* 3D cube — keep your existing decoration */}
       <div className="cube-wrap">
         <div className="cube">
           <div className="face front" />
-          <div className="face back"  />
-          <div className="face left"  />
+          <div className="face back" />
+          <div className="face left" />
           <div className="face right" />
-          <div className="face top"   />
-          <div className="face bottom"/>
+          <div className="face top" />
+          <div className="face bottom" />
         </div>
       </div>
 
       <div className="login-container">
-        {/* Logo / Brand */}
+        {/* Brand */}
         <div className="login-brand">
-          <div className="brand-icon">
-            <span>SQ</span>
-          </div>
+          <div className="brand-icon"><span>SQ</span></div>
           <h1>StockIQ</h1>
-          <p>Smart Inventory Management</p>
+          <p>Inventory Management System</p>
         </div>
 
-        {/* Login Form */}
-        <form className="login-form" onSubmit={handleLogin}>
-          <h2>Welcome Back</h2>
-          <p className="sub">Sign in to your dashboard</p>
+        {/* Role Toggle — NEW */}
+        <div className="role-toggle">
+          {['admin', 'staff'].map((r) => (
+            <button
+              key={r}
+              type="button"
+              className={`role-btn ${role === r ? 'active' : ''}`}
+              onClick={() => { setRole(r); setError(''); }}
+            >
+              {r === 'admin' ? '🔑 Admin' : '👤 Staff'}
+            </button>
+          ))}
+        </div>
 
-          {error && <div className="error-box">{error}</div>}
+        {/* Form */}
+        <div className="login-form">
+          <form onSubmit={handleSubmit}>
+            {error && <div className="error-box">{error}</div>}
 
-          <div className="form-group">
-            <label>Username</label>
-            <input
-              className="input-field"
-              type="text"
-              placeholder="admin"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)} // Update state on typing
-              required
-            />
-          </div>
+            <div className="form-group">
+              <label>Username</label>
+              <input
+                className="input-field"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter username"
+                required
+              />
+            </div>
 
-          <div className="form-group">
-            <label>Password</label>
-            <input
-              className="input-field"
-              type="password"
-              placeholder="••••••••"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
+            <div className="form-group">
+              <label>Password</label>
+              <input
+                className="input-field"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                required
+              />
+            </div>
 
-          <button className="btn btn-primary login-btn" type="submit" disabled={loading}>
-            {loading ? <span className="spinner" /> : '🚀 Sign In'}
-          </button>
+            <button className="btn btn-primary login-btn" type="submit" disabled={loading}>
+              {loading
+                ? <><span className="spinner" /> Signing in…</>
+                : `Sign in as ${role}`
+              }
+            </button>
 
-          <p className="hint">Default: admin / admin123</p>
-        </form>
+            {/* <p className="hint">
+              {role === 'admin' ? '🔑 Admin access' : '👤 Staff access — limited permissions'}
+            </p> */}
+          </form>
+        </div>
       </div>
     </div>
   );
 }
-
-export default Login;

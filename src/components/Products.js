@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../styles/products.css';
+import { useAuth } from '../context/AuthContext';
 
 // Empty form template - used for both Add and Edit
 const emptyForm = { name: '', quantity: '', category: 'Electronics', price: '', description: '' };
@@ -15,6 +16,7 @@ function Products() {
   const [form, setForm]           = useState(emptyForm);
   const [search, setSearch]       = useState('');
   const [msg, setMsg]             = useState('');
+  const { isAdmin }     = useAuth();  
 
   // Run once when component loads
   useEffect(() => {
@@ -173,7 +175,9 @@ function Products() {
                   <td>{getStatusBadge(p.status)}</td>
                   <td className="action-cell">
                     <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>✏️ Edit</button>
+                    {isAdmin && (
                     <button className="btn btn-danger btn-sm" onClick={() => handleDelete(p._id)}>🗑️</button>
+                  )     }
                   </td>
                 </tr>
               ))}
