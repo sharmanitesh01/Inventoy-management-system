@@ -3,6 +3,31 @@ const router   = express.Router();
 const Product  = require('../models/Product');
 const { protect, adminOnly } = require('../middleware/authMiddleware');
 
+// ─── GET /api/products/stats  ─ MUST be BEFORE /:id or Express treats "stats" as an id ──
+router.get('/stats', protect, async (req, res) => {
+  try {
+    const total      = await Product.countDocuments();
+    const inStock    = await Product.countDocuments({ status: 'In Stock' });
+    const lowStock   = await Product.countDocuments({ status: 'Low Stock' });
+    const outOfStock = await Product.countDocuments({ status: 'Out of Stock' });
+
+    const byCategory = await Product.aggregate([
+      {
+        $group: {
+          _id:      '$category',
+          count:    { $sum: 1 },
+          totalQty: { $sum: '$quantity' },
+        },
+      },
+      { $sort: { count: -1 } },
+    ]);
+
+    res.json({ total, inStock, lowStock, outOfStock, byCategory });
+  } catch (err) {
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 // ─── GET /api/products  — both admin and staff can view ──────────────────────
 router.get('/', protect, async (req, res) => {
   try {
