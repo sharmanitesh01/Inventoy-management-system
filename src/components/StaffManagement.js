@@ -33,7 +33,7 @@ export default function StaffManagement() {
     setLoading(true);
     try {
       await createStaff(form);
-      flash('✅ Staff account created successfully');
+      flash(' Staff account created successfully');
       setForm(EMPTY_FORM);
       setShowForm(false);
       fetchStaff();
@@ -48,7 +48,7 @@ export default function StaffManagement() {
     if (!window.confirm(`${isActive ? 'Suspend' : 'Activate'} ${name}?`)) return;
     try {
       await toggleStaff(id);
-      flash(`${isActive ? '🔴 Suspended' : '✅ Activated'}: ${name}`);
+      flash(`${isActive ? ' Suspended' : ' Activated'}: ${name}`);
       fetchStaff();
     } catch {
       flash('❌ Failed to update status', true);
@@ -113,7 +113,7 @@ export default function StaffManagement() {
             ))}
 
             <div className="staff-info-box">
-              ℹ️ Staff can <strong>view, add, and update</strong> products. Only admins can delete products.
+               Staff can <strong>view, add, and update</strong> products. Only admins can delete products.
             </div>
 
             <div className="modal-actions">

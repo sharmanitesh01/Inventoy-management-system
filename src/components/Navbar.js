@@ -1,5 +1,6 @@
 import React from 'react';
 import '../styles/navbar.css';
+import StaffManagement from './StaffManagement';
 
 function Navbar({ currentPage }) {
   // Map page names to display titles

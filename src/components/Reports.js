@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { getProducts, getProductStats } from '../services/api';  // ✅ FIX: use shared api service
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   RadialBarChart, RadialBar, Legend,
@@ -18,11 +18,10 @@ function Reports() {
   }, []);
 
   const fetchData = async () => {
-    const headers = { Authorization: `Bearer ${localStorage.getItem('token')}` };
     try {
       const [statsRes, prodRes] = await Promise.all([
-        axios.get('/api/products/stats', { headers }),
-        axios.get('/api/products', { headers }),
+        getProductStats(),  // ✅ FIX: token auto-attached by interceptor
+        getProducts(),
       ]);
       setStats(statsRes.data);
       setProducts(prodRes.data);

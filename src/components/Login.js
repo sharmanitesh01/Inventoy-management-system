@@ -34,7 +34,7 @@ export default function Login() {
       <div className="blob blob-3" />
 
       {/* 3D cube — keep your existing decoration */}
-      <div className="cube-wrap">
+      {/* <div className="cube-wrap">
         <div className="cube">
           <div className="face front" />
           <div className="face back" />
@@ -43,7 +43,7 @@ export default function Login() {
           <div className="face top" />
           <div className="face bottom" />
         </div>
-      </div>
+      </div> */}
 
       <div className="login-container">
         {/* Brand */}

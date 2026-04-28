@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import { getProducts } from '../services/api';  // ✅ FIX: use shared api service
 import '../styles/inventory.css';
 
 function Inventory() {
@@ -13,9 +13,7 @@ function Inventory() {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get('/api/products', {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
+      const res = await getProducts();  // ✅ FIX: token auto-attached by interceptor
       setProducts(res.data);
     } catch (err) {
       console.error(err);
