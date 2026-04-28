@@ -23,22 +23,22 @@ const sampleProducts = [
 
 const seed = async () => {
   await mongoose.connect(process.env.MONGO_URI);
-  console.log('✅ Connected to MongoDB');
+  console.log(' Connected to MongoDB');
 
   // Clear existing data
   await Admin.deleteMany();
   await Product.deleteMany();
-  console.log('🗑️  Cleared old data');
+  console.log('  Cleared old data');
 
   // Create admin (password will be hashed by model)
   await Admin.create({ username: 'admin', password: 'admin123', email: 'admin@stockiq.com' });
-  console.log('👤 Admin created → username: admin | password: admin123');
+  console.log(' Admin created → username: admin | password: admin123');
 
   // Create sample products
   await Product.insertMany(sampleProducts);
-  console.log('📦 10 sample products added');
+  console.log(' 10 sample products added');
 
-  console.log('\n🚀 Seed complete! You can now start the server.');
+  console.log('\n Seed complete! You can now start the server.');
   process.exit(0);
 };
 
