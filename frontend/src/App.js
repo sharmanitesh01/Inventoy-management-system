@@ -1,50 +1,72 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Login          from './components/Login';
-import Sidebar        from './components/Sidebar';
-import Navbar         from './components/Navbar';
-import Dashboard      from './components/Dashboard';
-import Products       from './components/Products';
-import Inventory      from './components/Inventory';
-import Reports        from './components/Reports';
-import Settings       from './components/Settings';
-import StaffManagement from './components/StaffManagement';
+import Login               from './components/auth/Login';
+import Register            from './components/auth/Register';
+import Sidebar             from './components/Sidebar';
+import Navbar              from './components/Navbar';
+import Dashboard           from './components/Dashboard';
+import Products            from './components/Products';
+import Inventory           from './components/Inventory';
+import Reports             from './components/Reports';
+import TeamManagement      from './components/TeamManagement';
+import Settings            from './components/Settings';
+import AuditLog            from './components/AuditLog';
+import SuperAdminDashboard from './components/superadmin/SuperAdminDashboard';
+import TenantsPage         from './components/superadmin/TenantsPage';
 import './index.css';
 
-// ─── Inner App — reads from AuthContext (must be INSIDE AuthProvider) ──────────
 function App() {
-  const { user, loading, logout } = useAuth();
-  const [currentPage, setCurrentPage] = useState('dashboard');
+  const { user, loading, logout, isPlatformOwner } = useAuth();
+  const [showRegister, setShowRegister] = useState(false);
+  // const [currentPage,  setCurrentPage]  = useState('dashboard');
+  const [currentPage, setCurrentPage] = useState(
+  user?.role === 'platform_owner' ? 'superadmin' : 'dashboard'
+  );
 
-  // While AuthContext restores session from localStorage, show a loading screen.
-  // This prevents the login page from flashing on refresh when already logged in.
+    useEffect(() => {
+    if (user?.role === 'platform_owner') {
+      setCurrentPage('superadmin');
+    } else if (user) {
+      setCurrentPage('dashboard');
+    }
+  }, [user]);
+
   if (loading) {
     return (
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
-        height: '100vh', background: '#0f172a', color: '#94a3b8', fontSize: '1.1rem'
+        height: '100vh', background: '#050b1a', color: '#94a3b8', fontSize: '1.1rem', gap: '1rem',
       }}>
-        Loading…
+        <div style={{
+          width: 32, height: 32,
+          border: '3px solid rgba(59,130,246,0.3)',
+          borderTopColor: '#3b82f6',
+          borderRadius: '50%',
+          animation: 'spin 0.8s linear infinite',
+        }} />
+        Loading StockIQ Cloud…
       </div>
     );
   }
 
-  // Not logged in → show Login page.
-  // Login calls useAuth().login() directly — no onLogin prop needed.
   if (!user) {
-    return <Login />;
+    return showRegister
+      ? <Register onShowLogin={() => setShowRegister(false)} />
+      : <Login    onShowRegister={() => setShowRegister(true)} />;
   }
 
-  // Logged in → show full dashboard layout
   const renderPage = () => {
     switch (currentPage) {
-      case 'dashboard': return <Dashboard />;
-      case 'products':  return <Products />;
-      case 'inventory': return <Inventory />;
-      case 'reports':   return <Reports />;
-      case 'settings':  return <Settings />;
-      case 'staff':     return <StaffManagement />;
-      default:          return <Dashboard />;
+      case 'dashboard':  return <Dashboard />;
+      case 'products':   return <Products />;
+      case 'inventory':  return <Inventory />;
+      case 'reports':    return <Reports />;
+      case 'team':       return <TeamManagement />;
+      case 'settings':   return <Settings />;
+      case 'audit':      return <AuditLog />;
+      case 'superadmin': return <SuperAdminDashboard />;
+      case 'tenants':    return <TenantsPage />;
+      default:           return isPlatformOwner ? <SuperAdminDashboard /> : <Dashboard />;
     }
   };
 
@@ -53,7 +75,7 @@ function App() {
       <Sidebar
         currentPage={currentPage}
         setCurrentPage={setCurrentPage}
-        onLogout={logout}
+        onLogout={() => { logout(); setCurrentPage('dashboard'); }}
       />
       <div className="main-content">
         <Navbar currentPage={currentPage} />
@@ -63,7 +85,6 @@ function App() {
   );
 }
 
-// ─── Root export — wraps everything in AuthProvider ───────────────────────────
 export default function AppWithAuth() {
   return (
     <AuthProvider>

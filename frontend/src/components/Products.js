@@ -1,151 +1,131 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import '../styles/products.css';
+import { getProducts, createProduct, updateProduct, deleteProduct } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import '../styles/products.css';
 
-// Empty form template - used for both Add and Edit
-const emptyForm = { name: '', quantity: '', category: 'Electronics', price: '', description: '' };
-
+// const EMPTY_FORM = { name: '', quantity: '', category: 'Electronics', price: '', description: '', sku: '' };
+const EMPTY_FORM = { name: '', quantity: 0, category: 'Electronics', price: 0, description: '', sku: '' };
 const CATEGORIES = ['Electronics', 'Clothing', 'Food', 'Furniture', 'Sports', 'Books', 'Other'];
 
-function Products() {
-  const [products, setProducts] = useState([]);   // List of all products
-  const [loading, setLoading]   = useState(true);
-  const [showModal, setShowModal] = useState(false); // Show/hide the form modal
-  const [editItem, setEditItem]   = useState(null);  // null = adding, object = editing
-  const [form, setForm]           = useState(emptyForm);
-  const [search, setSearch]       = useState('');
-  const [msg, setMsg]             = useState('');
-  const { isAdmin }     = useAuth();  
+export default function Products() {
+  const { can, isAdminUp } = useAuth();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [search, setSearch] = useState('');
+  const [flashMsg, setFlashMsg] = useState('');
 
-  // Run once when component loads
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  // Get auth header (token needed for all API calls)
-  const authHeader = () => ({
-    headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-  });
-
-  const fetchProducts = async () => {
+  const load = async () => {
     try {
-      const res = await axios.get('/api/products', authHeader());
+      const res = await getProducts(search ? { search } : {});
       setProducts(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch { } finally { setLoading(false); }
   };
 
-  // Open modal for adding new product
-  const openAdd = () => {
-    setEditItem(null);
-    setForm(emptyForm);
+  useEffect(() => { load(); }, []);
+
+  const flash = (msg) => { setFlashMsg(msg); setTimeout(() => setFlashMsg(''), 3500); };
+
+  const openAdd = () => { setEditItem(null); setForm({ ...EMPTY_FORM }); setShowModal(true); };
+  const openEdit = (p) => {
+    setEditItem(p);
+    setForm({ name: p.name, quantity: p.quantity, category: p.category, price: p.price, description: p.description || '', sku: p.sku || '' });
     setShowModal(true);
   };
 
-  // Open modal for editing existing product
-  const openEdit = (product) => {
-    setEditItem(product);
-    setForm({
-      name: product.name,
-      quantity: product.quantity,
-      category: product.category,
-      price: product.price,
-      description: product.description || '',
-    });
-    setShowModal(true);
-  };
+  // const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
-  // Handle form field changes
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    // Spread operator copies all existing form fields, then overwrites the changed one
+    const { name, value } = e.target;
+
+    setForm({
+      ...form,
+      [name]: name === 'quantity' || name === 'price'
+        ? Number(value)
+        : value
+    });
   };
 
-  // Submit form - either add or edit
   const handleSubmit = async (e) => {
     e.preventDefault();
+    const payload = {
+    ...form,
+    quantity: Number(form.quantity),
+    price: Number(form.price)
+    };
+    
     try {
+      // if (editItem) { await updateProduct(editItem._id, form); flash('✅ Product updated!'); }
+      // else { await createProduct(form); flash('✅ Product added!'); }
+
       if (editItem) {
-        // PUT = update existing
-        await axios.put(`/api/products/${editItem._id}`, form, authHeader());
-        showMsg('✅ Product updated!');
+        await updateProduct(editItem._id, payload);
+        flash('✅ Product updated!');
       } else {
-        // POST = create new
-        await axios.post('/api/products', form, authHeader());
-        showMsg('✅ Product added!');
+        await createProduct(payload);
+        flash('✅ Product added!');
       }
       setShowModal(false);
-      fetchProducts(); // Refresh list
+      load();
     } catch (err) {
-      showMsg('❌ Error: ' + (err.response?.data?.message || 'Failed'));
+      flash('❌ ' + (err.response?.data?.message || 'Failed'));
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Delete this product?')) return;
-    try {
-      await axios.delete(`/api/products/${id}`, authHeader());
-      showMsg('🗑️ Product deleted');
-      fetchProducts();
-    } catch (err) {
-      showMsg('❌ Delete failed');
-    }
+    try { await deleteProduct(id); flash('🗑️ Product deleted'); load(); }
+    catch (err) { flash('❌ ' + (err.response?.data?.message || 'Failed')); }
   };
 
-  const showMsg = (text) => {
-    setMsg(text);
-    setTimeout(() => setMsg(''), 3000); // Hide after 3 seconds
-  };
-
-  // Filter products by search term
-  const filtered = products.filter((p) =>
+  const filtered = products.filter(p =>
     p.name.toLowerCase().includes(search.toLowerCase()) ||
     p.category.toLowerCase().includes(search.toLowerCase())
   );
 
-  const getStatusBadge = (status) => {
-    if (status === 'In Stock')    return <span className="badge badge-green">{status}</span>;
-    if (status === 'Low Stock')   return <span className="badge badge-yellow">{status}</span>;
-    if (status === 'Out of Stock') return <span className="badge badge-red">{status}</span>;
+  const statusBadge = (s) => {
+    if (s === 'In Stock') return <span className="badge badge-green">{s}</span>;
+    if (s === 'Low Stock') return <span className="badge badge-yellow">{s}</span>;
+    return <span className="badge badge-red">{s}</span>;
   };
 
-  if (loading) return <div className="loading-screen"><div className="loader" /><p>Loading Products...</p></div>;
+  if (loading) return <div className="loading-screen"><div className="loader" /><p>Loading Products…</p></div>;
 
   return (
     <div className="products-page fade-in">
-      {/* Header Row */}
       <div className="products-header">
         <div className="page-header">
           <h1>Product Catalog</h1>
-          <p>{products.length} products in database</p>
+          <p>{products.length} total products</p>
         </div>
         <div className="header-actions">
           <input
             className="input-field search-input"
             type="text"
-            placeholder="🔍 Search products..."
+            placeholder="🔍 Search products…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && load()}
           />
-          <button className="btn btn-primary" onClick={openAdd}>
-            ＋ Add Product
-          </button>
+          {can('products.create') && (
+            <button className="btn btn-primary" onClick={openAdd}>＋ Add Product</button>
+          )}
         </div>
       </div>
 
-      {/* Flash message */}
-      {msg && <div className={`flash-msg ${msg.startsWith('❌') ? 'flash-err' : 'flash-ok'}`}>{msg}</div>}
+      {flashMsg && (
+        <div className={`flash-msg ${flashMsg.startsWith('❌') ? 'flash-err' : 'flash-ok'}`}>
+          {flashMsg}
+        </div>
+      )}
 
-      {/* Products Table */}
       <div className="card table-card">
         {filtered.length === 0 ? (
           <div className="empty-state">
             <p style={{ fontSize: '3rem' }}>📦</p>
-            <p>No products found. Add your first product!</p>
+            <p>No products found. {can('products.create') && 'Click "+ Add Product" to get started.'}</p>
           </div>
         ) : (
           <table className="products-table">
@@ -153,6 +133,7 @@ function Products() {
               <tr>
                 <th>#</th>
                 <th>Product Name</th>
+                <th>SKU</th>
                 <th>Category</th>
                 <th>Quantity</th>
                 <th>Price (₹)</th>
@@ -162,22 +143,32 @@ function Products() {
             </thead>
             <tbody>
               {filtered.map((p, i) => (
-                <tr key={p._id} style={{ animationDelay: `${i * 0.05}s` }}>
+                <tr key={p._id}>
                   <td className="row-num">{i + 1}</td>
                   <td className="product-name">{p.name}</td>
+                  <td style={{ color: '#64748b', fontSize: '0.8rem', fontFamily: 'var(--font-mono)' }}>{p.sku || '—'}</td>
                   <td><span className="cat-pill">{p.category}</span></td>
-                  <td className="qty-cell">
-                    <span style={{ color: p.quantity <= 10 ? '#f59e0b' : '#06d6a0', fontWeight: 700, fontFamily: 'var(--font-mono)' }}>
+                  <td>
+                    <span style={{
+                      fontWeight: 700, fontFamily: 'var(--font-mono)',
+                      color: p.quantity === 0 ? '#ef4444' : p.quantity <= 10 ? '#f59e0b' : '#06d6a0',
+                    }}>
                       {p.quantity}
                     </span>
                   </td>
-                  <td style={{ fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>₹{p.price}</td>
-                  <td>{getStatusBadge(p.status)}</td>
-                  <td className="action-cell">
-                    <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>✏️ Edit</button>
-                    {isAdmin && (
-                    <button className="btn btn-danger btn-sm" onClick={() => handleDelete(p._id)}>🗑️</button>
-                  )     }
+                  <td style={{ fontFamily: 'var(--font-mono)', color: '#94a3b8' }}>
+                    ₹{Number(p.price).toLocaleString('en-IN')}
+                  </td>
+                  <td>{statusBadge(p.status)}</td>
+                  <td>
+                    <div className="action-cell">
+                      {can('products.edit') && (
+                        <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>✏️ Edit</button>
+                      )}
+                      {isAdminUp && (
+                        <button className="btn btn-danger btn-sm" onClick={() => handleDelete(p._id)}>🗑️</button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -186,15 +177,14 @@ function Products() {
         )}
       </div>
 
-      {/* ── MODAL FORM ── */}
+      {/* Modal */}
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-box" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{editItem ? '✏️ Edit Product' : '➕ Add New Product'}</h3>
+              <h3>{editItem ? '✏️ Edit Product' : '➕ Add Product'}</h3>
               <button className="modal-close" onClick={() => setShowModal(false)}>✕</button>
             </div>
-
             <form onSubmit={handleSubmit} className="modal-form">
               <div className="form-row">
                 <div className="form-group">
@@ -202,29 +192,35 @@ function Products() {
                   <input className="input-field" name="name" value={form.name} onChange={handleChange} placeholder="e.g. Samsung TV" required />
                 </div>
                 <div className="form-group">
-                  <label>Category *</label>
-                  <select className="input-field" name="category" value={form.category} onChange={handleChange}>
-                    {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-                  </select>
+                  <label>SKU</label>
+                  <input className="input-field" name="sku" value={form.sku} onChange={handleChange} placeholder="e.g. ELEC-001" />
                 </div>
               </div>
               <div className="form-row">
                 <div className="form-group">
-                  <label>Quantity *</label>
-                  <input className="input-field" name="quantity" type="number" min="0" value={form.quantity} onChange={handleChange} placeholder="0" required />
+                  <label>Category *</label>
+                  <select className="input-field" name="category" value={form.category} onChange={handleChange}>
+                    {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                  </select>
                 </div>
                 <div className="form-group">
+                  <label>Quantity *</label>
+                  <input className="input-field" name="quantity" type="number" min="0" value={form.quantity} onChange={handleChange} required />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="form-group">
                   <label>Price (₹) *</label>
-                  <input className="input-field" name="price" type="number" min="0" value={form.price} onChange={handleChange} placeholder="0" required />
+                  <input className="input-field" name="price" type="number" min="0" value={form.price} onChange={handleChange} required />
                 </div>
               </div>
               <div className="form-group">
                 <label>Description</label>
-                <textarea className="input-field" name="description" value={form.description} onChange={handleChange} placeholder="Optional product description..." rows={3} />
+                <textarea className="input-field" name="description" value={form.description} onChange={handleChange} rows={3} placeholder="Optional product description" />
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>Cancel</button>
-                <button type="submit" className="btn btn-primary">{editItem ? 'Update Product' : 'Add Product'}</button>
+                <button type="submit" className="btn btn-primary">{editItem ? '💾 Update' : '➕ Add Product'}</button>
               </div>
             </form>
           </div>
@@ -233,5 +229,3 @@ function Products() {
     </div>
   );
 }
-
-export default Products;

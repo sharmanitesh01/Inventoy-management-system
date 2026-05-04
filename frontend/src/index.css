@@ -220,3 +220,8 @@ body {
 select.input-field option {
   background: var(--bg-card);
 }
+
+/* ── SaaS v2 additions ───────────────────────────────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

@@ -4,47 +4,56 @@ const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user,    setUser]    = useState(null);
-  const [token,   setToken]   = useState(null);
-  const [loading, setLoading] = useState(true); // true until we've checked localStorage
+  const [loading, setLoading] = useState(true);
 
-  // On first mount: restore session from localStorage
   useEffect(() => {
     try {
+      const savedUser = localStorage.getItem('user');
       const savedToken = localStorage.getItem('token');
-      const savedUser  = localStorage.getItem('user');
-      if (savedToken && savedUser) {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-      }
+      if (savedUser && savedToken) setUser(JSON.parse(savedUser));
     } catch {
-      // If stored data is corrupted, clear it
       localStorage.removeItem('token');
       localStorage.removeItem('user');
     } finally {
-      setLoading(false); // Always mark loading done
+      setLoading(false);
     }
   }, []);
 
-  // Called after a successful API login
   const login = (userData, jwt) => {
-    setUser(userData);
-    setToken(jwt);
     localStorage.setItem('token', jwt);
     localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
   };
 
   const logout = () => {
     setUser(null);
-    setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
 
-  const isAdmin = user?.role === 'admin';
-  const isStaff = user?.role === 'staff';
+  // Role helpers
+  const isPlatformOwner = user?.role === 'platform_owner';
+  const isCompanyOwner  = user?.role === 'company_owner';
+  const isCompanyAdmin  = user?.role === 'company_admin';
+  const isManager       = user?.role === 'manager';
+  const isStaff         = user?.role === 'staff';
+  const isAdminUp       = ['platform_owner','company_owner','company_admin'].includes(user?.role);
+
+  // Permission checker
+  const can = (perm) => {
+    if (!user) return false;
+    if (user.permissions?.includes('*')) return true;
+    if (user.permissions?.includes(perm)) return true;
+    const ns = perm.split('.')[0];
+    return user.permissions?.includes(`${ns}.*`);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout, isAdmin, isStaff }}>
+    <AuthContext.Provider value={{
+      user, loading, login, logout,
+      isPlatformOwner, isCompanyOwner, isCompanyAdmin, isManager, isStaff, isAdminUp,
+      can,
+    }}>
       {children}
     </AuthContext.Provider>
   );

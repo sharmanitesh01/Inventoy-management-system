@@ -1,185 +1,156 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getSettings, updateSettings } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 import '../styles/settings.css';
 
-function Settings() {
-  // Profile settings state
-  const [profile, setProfile] = useState({
-    username: localStorage.getItem('username') || 'admin',
-    email: 'admin@stockiq.com',
-    company: 'My Business',
-  });
+const PLAN_INFO = {
+  trial:      { label: 'Free Trial',  color: '#f59e0b', features: '3 users · 100 products · 14 days' },
+  basic:      { label: 'Basic',       color: '#3b82f6', features: '10 users · 500 products'           },
+  pro:        { label: 'Pro',         color: '#8b5cf6', features: '50 users · 5000 products'          },
+  enterprise: { label: 'Enterprise',  color: '#06d6a0', features: 'Unlimited users & products'        },
+};
 
-  // Toggle switches state - true = ON, false = OFF
-  const [notifs, setNotifs] = useState({
-    lowStock: true,
-    outOfStock: true,
-    emailAlerts: false,
-    reorderReminder: true,
-  });
+export default function Settings() {
+  const { user, isAdminUp } = useAuth();
+  const [form,    setForm]    = useState({ companyName: '', ownerName: '', phone: '', businessType: '', gstNumber: '', address: '' });
+  const [msg,     setMsg]     = useState('');
+  const [loading, setLoading] = useState(true);
 
-  // Inventory preferences
-  const [prefs, setPrefs] = useState({
-    lowStockThreshold: 10,
-    defaultReorderQty: 50,
-  });
+  useEffect(() => {
+    if (user?.tenantId) {
+      getSettings()
+        .then(r => setForm({
+          companyName:  r.data.companyName  || '',
+          ownerName:    r.data.ownerName    || '',
+          phone:        r.data.phone        || '',
+          businessType: r.data.businessType || '',
+          gstNumber:    r.data.gstNumber    || '',
+          address:      r.data.address      || '',
+        }))
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, []);
 
-  const [saved, setSaved] = useState('');
-
-  const handleSave = (section) => {
-    // In real app, this would send to backend
-    setSaved(`✅ ${section} saved!`);
-    setTimeout(() => setSaved(''), 3000);
+  const handleSave = async () => {
+    try {
+      await updateSettings(form);
+      setMsg('✅ Settings saved successfully!');
+      setTimeout(() => setMsg(''), 3000);
+    } catch (err) {
+      setMsg('❌ ' + (err.response?.data?.message || 'Failed to save'));
+    }
   };
 
-  // Toggle a boolean notification setting
-  const toggleNotif = (key) => {
-    setNotifs({ ...notifs, [key]: !notifs[key] });
-  };
+  const plan = PLAN_INFO[user?.plan] || {};
+
+  if (loading) return <div className="loading-screen"><div className="loader" /></div>;
 
   return (
     <div className="settings-page fade-in">
       <div className="page-header">
-        <h1>System Settings</h1>
-        <p>Manage your account and system preferences</p>
+        <h1>Settings</h1>
+        <p>Manage your company configuration</p>
       </div>
 
-      {saved && <div className="flash-msg flash-ok">{saved}</div>}
+      {msg && (
+        <div className={`flash-msg ${msg.startsWith('❌') ? 'flash-err' : 'flash-ok'}`} style={{ marginBottom: '1.25rem' }}>
+          {msg}
+        </div>
+      )}
 
       <div className="settings-grid">
-        {/* ── PROFILE SETTINGS ── */}
+        {/* Company Info */}
         <div className="card settings-card">
           <div className="settings-card-header">
-            <span className="settings-icon">👤</span>
+            <span className="settings-icon">🏢</span>
             <div>
-              <h3>Profile Settings</h3>
-              <p>Update your personal information</p>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Username</label>
-            <input
-              className="input-field"
-              value={profile.username}
-              onChange={(e) => setProfile({ ...profile, username: e.target.value })}
-            />
-          </div>
-          <div className="form-group">
-            <label>Email</label>
-            <input
-              className="input-field"
-              type="email"
-              value={profile.email}
-              onChange={(e) => setProfile({ ...profile, email: e.target.value })}
-            />
-          </div>
-          <div className="form-group">
-            <label>Company Name</label>
-            <input
-              className="input-field"
-              value={profile.company}
-              onChange={(e) => setProfile({ ...profile, company: e.target.value })}
-            />
-          </div>
-          <button className="btn btn-primary" onClick={() => handleSave('Profile')}>
-            💾 Save Profile
-          </button>
-        </div>
-
-        {/* ── NOTIFICATION SETTINGS ── */}
-        <div className="card settings-card">
-          <div className="settings-card-header">
-            <span className="settings-icon">🔔</span>
-            <div>
-              <h3>Notification Settings</h3>
-              <p>Control alert preferences</p>
+              <h3>Company Information</h3>
+              <p>Update your business details</p>
             </div>
           </div>
 
           {[
-            { key: 'lowStock',        label: 'Low Stock Alerts',     desc: 'Alert when stock ≤ threshold' },
-            { key: 'outOfStock',      label: 'Out of Stock Alerts',  desc: 'Alert when quantity is zero'  },
-            { key: 'emailAlerts',     label: 'Email Notifications',  desc: 'Send alerts to your email'    },
-            { key: 'reorderReminder', label: 'Reorder Reminders',    desc: 'Weekly reorder suggestions'   },
-          ].map((item) => (
-            <div className="toggle-row" key={item.key}>
-              <div>
-                <p className="toggle-label">{item.label}</p>
-                <p className="toggle-desc">{item.desc}</p>
-              </div>
-              {/* Toggle switch - clicking calls toggleNotif */}
-              <div
-                className={`toggle-switch ${notifs[item.key] ? 'on' : ''}`}
-                onClick={() => toggleNotif(item.key)}
-              >
-                <div className="toggle-thumb" />
-              </div>
+            { key: 'companyName', label: 'Company Name'  },
+            { key: 'ownerName',   label: 'Owner Name'    },
+            { key: 'phone',       label: 'Phone Number'  },
+            { key: 'gstNumber',   label: 'GST Number'    },
+          ].map(({ key, label }) => (
+            <div className="form-group" key={key}>
+              <label>{label}</label>
+              <input
+                className="input-field"
+                value={form[key]}
+                onChange={e => setForm({ ...form, [key]: e.target.value })}
+                disabled={!isAdminUp}
+              />
             </div>
           ))}
 
-          <button className="btn btn-primary" onClick={() => handleSave('Notifications')}>
-            💾 Save Notifications
-          </button>
+          <div className="form-group">
+            <label>Business Address</label>
+            <textarea
+              className="input-field"
+              value={form.address}
+              rows={3}
+              onChange={e => setForm({ ...form, address: e.target.value })}
+              disabled={!isAdminUp}
+            />
+          </div>
+
+          {isAdminUp && (
+            <button className="btn btn-primary" onClick={handleSave}>💾 Save Settings</button>
+          )}
         </div>
 
-        {/* ── INVENTORY PREFERENCES ── */}
+        {/* Plan & System Info */}
         <div className="card settings-card">
           <div className="settings-card-header">
-            <span className="settings-icon">📦</span>
+            <span className="settings-icon">💎</span>
             <div>
-              <h3>Inventory Preferences</h3>
-              <p>Configure inventory thresholds</p>
+              <h3>Subscription & System</h3>
+              <p>Your current plan and system information</p>
             </div>
           </div>
 
-          <div className="form-group">
-            <label>Low Stock Threshold (units)</label>
-            <input
-              className="input-field"
-              type="number"
-              min="1"
-              value={prefs.lowStockThreshold}
-              onChange={(e) => setPrefs({ ...prefs, lowStockThreshold: e.target.value })}
-            />
-            <p className="input-hint">Products with qty ≤ this value are marked "Low Stock"</p>
-          </div>
-          <div className="form-group">
-            <label>Default Reorder Quantity</label>
-            <input
-              className="input-field"
-              type="number"
-              min="1"
-              value={prefs.defaultReorderQty}
-              onChange={(e) => setPrefs({ ...prefs, defaultReorderQty: e.target.value })}
-            />
-            <p className="input-hint">Suggested order quantity when restocking</p>
-          </div>
-          <button className="btn btn-primary" onClick={() => handleSave('Preferences')}>
-            💾 Save Preferences
-          </button>
-        </div>
-
-        {/* ── SYSTEM INFO ── */}
-        <div className="card settings-card system-info-card">
-          <div className="settings-card-header">
-            <span className="settings-icon">ℹ️</span>
-            <div>
-              <h3>System Information</h3>
-              <p>Technical details</p>
+          {user?.plan && (
+            <div style={{
+              padding: '1.25rem',
+              background: `${plan.color}0d`,
+              borderRadius: '12px',
+              border: `1px solid ${plan.color}33`,
+              marginBottom: '1.25rem',
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: plan.color }}>{plan.label}</span>
+                <span style={{
+                  padding: '3px 12px', borderRadius: '20px', fontSize: '0.75rem', fontWeight: 700,
+                  background: `${plan.color}22`, color: plan.color, border: `1px solid ${plan.color}44`,
+                }}>ACTIVE</span>
+              </div>
+              <p style={{ color: '#94a3b8', fontSize: '0.88rem' }}>{plan.features}</p>
+              {user.plan === 'trial' && (
+                <div style={{ marginTop: '0.75rem', padding: '0.6rem 0.85rem', background: 'rgba(245,158,11,0.1)', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.3)' }}>
+                  <p style={{ color: '#f59e0b', fontSize: '0.82rem' }}>⚠️ Trial expires in 14 days. Upgrade to keep your data.</p>
+                </div>
+              )}
             </div>
-          </div>
+          )}
+
           <div className="info-grid">
             {[
-              { key: 'App Name',    val: 'StockIQ'        },
-              { key: 'Version',     val: '1.0.0'           },
-              { key: 'Frontend',    val: 'React 18'        },
-              { key: 'Backend',     val: 'Node + Express'  },
-              { key: 'Database',    val: 'MongoDB'         },
-              { key: 'Auth',        val: 'JWT Tokens'      },
-            ].map((row) => (
+              { key: 'Your Role',    val: user?.role?.replace(/_/g, ' ')  },
+              { key: 'Username',     val: user?.username                    },
+              { key: 'Email',        val: user?.email                       },
+              { key: 'Platform',     val: 'StockIQ Cloud v2.0'             },
+              { key: 'Backend',      val: 'Node.js + Express'              },
+              { key: 'Database',     val: 'MongoDB Atlas'                  },
+            ].map(row => (
               <div className="info-row" key={row.key}>
                 <span className="info-key">{row.key}</span>
-                <span className="info-val">{row.val}</span>
+                <span className="info-val" style={{ textTransform: 'capitalize' }}>{row.val}</span>
               </div>
             ))}
           </div>
@@ -188,5 +159,3 @@ function Settings() {
     </div>
   );
 }
-
-export default Settings;
