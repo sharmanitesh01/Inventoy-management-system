@@ -51,9 +51,9 @@ const getProducts = async (req, res) => {
 const createProduct = async (req, res) => {
   try {
     // Check tenant product limit
-    const count = await Product.countDocuments({ tenantId: req.user.tenantId });
-    if (req.tenant && count >= req.tenant.maxProducts)
-      return res.status(403).json({ message: `Product limit reached (${req.tenant.maxProducts}). Upgrade your plan.` });
+    // const count = await Product.countDocuments({ tenantId: req.user.tenantId });
+    // if (req.tenant && count >= req.tenant.maxProducts)
+    //   return res.status(403).json({ message: `Product limit reached (${req.tenant.maxProducts}). Upgrade your plan.` });
 
     const { name, quantity, category, price, description, sku, lowStockThreshold } = req.body;
     if (!name || quantity === undefined || !category || !price)

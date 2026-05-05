@@ -1,5 +1,5 @@
 const User     = require('../models/User');
-const Tenant   = require('../models/Tenant');
+// const Tenant   = require('../models/Tenant');
 const AuditLog = require('../models/AuditLog');
 
 const log = (req, action, detail) =>
@@ -26,10 +26,10 @@ const getUsers = async (req, res) => {
 const createUser = async (req, res) => {
   try {
     // Check tenant user limit
-    const count = await User.countDocuments({ tenantId: req.user.tenantId });
-    const tenant = await Tenant.findById(req.user.tenantId);
-    if (tenant && count >= tenant.maxUsers)
-      return res.status(403).json({ message: `User limit reached (${tenant.maxUsers}). Upgrade your plan.` });
+    // const count = await User.countDocuments({ tenantId: req.user.tenantId });
+    // const tenant = await Tenant.findById(req.user.tenantId);
+    // if (tenant && count >= tenant.maxUsers)
+    //   return res.status(403).json({ message: `User limit reached (${tenant.maxUsers}). Upgrade your plan.` });
 
     const { fullName, username, email, password, phone, role, permissions } = req.body;
     if (!fullName || !username || !email || !password)

@@ -13,14 +13,14 @@ const formatUser = (user, tenant = null) => ({
   role: user.role,
   permissions: user.permissions,
   tenantId: user.tenantId,
-  companyName: tenant?.companyName || null,
-  plan: tenant?.plan || null,
+  companyName: tenant?.companyName || null
 });
 
-// POST /api/auth/login  — unified login for all roles
+// LOGIN
 const login = async (req, res) => {
   try {
     const { username, password } = req.body;
+
     if (!username || !password)
       return res.status(400).json({ message: 'Username and password required' });
 
@@ -34,11 +34,10 @@ const login = async (req, res) => {
     let tenant = null;
     if (user.tenantId) {
       tenant = await Tenant.findById(user.tenantId);
-      if (tenant && !tenant.isActive) return res.status(403).json({ message: 'Your company account is deactivated.' });
-      if (tenant && tenant.isFrozen) return res.status(403).json({ message: 'Your company account is frozen. Contact support.' });
+      if (tenant && !tenant.isActive)
+        return res.status(403).json({ message: 'Your company account is deactivated.' });
     }
 
-    // res.json({ token: signToken(user._id), user: formatUser(user, tenant) });
     if (user.tenantId) {
       await AuditLog.create({
         tenantId: user.tenantId,
@@ -48,38 +47,43 @@ const login = async (req, res) => {
         module: 'auth',
         detail: `${user.fullName} logged into the system`,
         ip: req.ip,
-      }).catch(() => { });
+      }).catch(() => {});
     }
 
-    res.json({ token: signToken(user._id), user: formatUser(user, tenant) });
+    res.json({
+      token: signToken(user._id),
+      user: formatUser(user, tenant)
+    });
+
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
-// POST /api/auth/register  — public company registration (SaaS onboarding)
+// REGISTER COMPANY
 const register = async (req, res) => {
   try {
-    const { companyName, ownerName, email, password, phone, businessType, plan } = req.body;
+    const { companyName, ownerName, email, password, phone, businessType } = req.body;
 
     if (!companyName || !ownerName || !email || !password)
       return res.status(400).json({ message: 'companyName, ownerName, email, password are required' });
 
-    // Check no existing user with that email
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(409).json({ message: 'Email already registered' });
 
-    // Check no existing tenant with that email
     const existingTenant = await Tenant.findOne({ email });
     if (existingTenant) return res.status(409).json({ message: 'Company email already registered' });
 
-    // Create tenant
-    const tenant = new Tenant({ companyName, ownerName, email, phone, businessType, plan: plan || 'trial' });
-    tenant.applyPlanLimits();
-    await tenant.save();
+    const tenant = await Tenant.create({
+      companyName,
+      ownerName,
+      email,
+      phone,
+      businessType
+    });
 
-    // Create company_owner user
     const username = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g, '') + '_' + Date.now().toString().slice(-4);
+
     const owner = await User.create({
       tenantId: tenant._id,
       fullName: ownerName,
@@ -90,18 +94,18 @@ const register = async (req, res) => {
       role: 'company_owner',
     });
 
-    const token = signToken(owner._id);
     res.status(201).json({
       message: 'Company registered successfully',
-      token,
-      user: formatUser(owner, tenant),
+      token: signToken(owner._id),
+      user: formatUser(owner, tenant)
     });
+
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 };
 
-// GET /api/auth/me  — return current user info
+// CURRENT USER
 const getMe = async (req, res) => {
   try {
     let tenant = null;
