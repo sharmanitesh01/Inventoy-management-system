@@ -3,20 +3,18 @@ import { useAuth } from '../../context/AuthContext';
 import { register as registerAPI } from '../../services/api';
 import '../../styles/login.css';
 
-const PLANS = [
-  { key: 'trial',      label: '🎯 Free Trial',   desc: '14 days · 3 users · 100 products' },
-  { key: 'basic',      label: '📦 Basic',         desc: '₹999/mo · 10 users · 500 products' },
-  { key: 'pro',        label: '🚀 Pro',            desc: '₹2999/mo · 50 users · 5000 products' },
-  { key: 'enterprise', label: '🏢 Enterprise',    desc: 'Custom pricing · Unlimited' },
-];
-
 export default function Register({ onShowLogin }) {
   const { login } = useAuth();
   const [form, setForm] = useState({
-    companyName: '', ownerName: '', email: '', password: '',
-    phone: '', businessType: 'Retail', plan: 'trial',
+    companyName: '',
+    ownerName: '',
+    email: '',
+    password: '',
+    phone: '',
+    businessType: 'Retail'
   });
-  const [error,   setError]   = useState('');
+
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
@@ -25,6 +23,7 @@ export default function Register({ onShowLogin }) {
     e.preventDefault();
     setError('');
     setLoading(true);
+
     try {
       const res = await registerAPI(form);
       login(res.data.user, res.data.token);
@@ -45,7 +44,7 @@ export default function Register({ onShowLogin }) {
         <div className="login-brand">
           <div className="brand-icon"><span>SQ</span></div>
           <h1>Register Company</h1>
-          <p>Start your free 14-day trial — no credit card needed</p>
+          <p>Create your business inventory workspace instantly</p>
         </div>
 
         <div className="login-form">
@@ -53,11 +52,11 @@ export default function Register({ onShowLogin }) {
             {error && <div className="error-box">{error}</div>}
 
             {[
-              { name: 'companyName', label: 'Company Name', ph: 'Gyan Enterprises',    type: 'text'     },
-              { name: 'ownerName',   label: 'Your Name',    ph: 'Gyan Singh',           type: 'text'     },
-              { name: 'email',       label: 'Email',        ph: 'you@company.com',      type: 'email'    },
-              { name: 'password',    label: 'Password',     ph: 'Min 6 characters',     type: 'password' },
-              { name: 'phone',       label: 'Phone',        ph: '9876543210 (optional)',type: 'text'     },
+              { name: 'companyName', label: 'Company Name', ph: 'Gyan Enterprises', type: 'text' },
+              { name: 'ownerName', label: 'Owner Name', ph: 'Gyan Singh', type: 'text' },
+              { name: 'email', label: 'Email', ph: 'you@company.com', type: 'email' },
+              { name: 'password', label: 'Password', ph: 'Minimum 6 characters', type: 'password' },
+              { name: 'phone', label: 'Phone', ph: '9876543210 (optional)', type: 'text' }
             ].map(f => (
               <div className="form-group" key={f.name}>
                 <label>{f.label}</label>
@@ -75,42 +74,21 @@ export default function Register({ onShowLogin }) {
 
             <div className="form-group">
               <label>Business Type</label>
-              <select className="input-field" name="businessType" value={form.businessType} onChange={handleChange}>
+              <select
+                className="input-field"
+                name="businessType"
+                value={form.businessType}
+                onChange={handleChange}
+              >
                 {['Retail','Wholesale','Manufacturing','E-commerce','Distribution','Other'].map(t =>
                   <option key={t}>{t}</option>
                 )}
               </select>
             </div>
 
-            <div className="form-group">
-              <label>Plan</label>
-              <div className="role-toggle" style={{ flexDirection: 'column', gap: '0.4rem' }}>
-                {PLANS.map(p => (
-                  <label key={p.key} style={{
-                    display: 'flex', alignItems: 'center', gap: '0.75rem',
-                    padding: '0.6rem 0.85rem', borderRadius: '8px', cursor: 'pointer',
-                    background: form.plan === p.key ? 'rgba(59,130,246,0.12)' : 'transparent',
-                    border: `1px solid ${form.plan === p.key ? 'rgba(59,130,246,0.4)' : 'transparent'}`,
-                    transition: 'all 0.2s ease',
-                  }}>
-                    <input
-                      type="radio" name="plan" value={p.key}
-                      checked={form.plan === p.key}
-                      onChange={handleChange}
-                      style={{ accentColor: '#3b82f6' }}
-                    />
-                    <span>
-                      <strong style={{ color: '#e2e8f0', fontSize: '0.9rem' }}>{p.label}</strong>
-                      <span style={{ marginLeft: 8, color: '#64748b', fontSize: '0.8rem' }}>{p.desc}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
-            </div>
-
-            <button className="btn btn-primary login-btn" type="submit" disabled={loading} style={{ marginTop: '0.5rem' }}>
+            <button className="btn btn-primary login-btn" type="submit" disabled={loading}>
               {loading
-                ? <><span className="spinner" /> Creating account…</>
+                ? <><span className="spinner" /> Creating Account…</>
                 : '🚀 Create Company Account'
               }
             </button>

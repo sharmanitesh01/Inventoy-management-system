@@ -56,8 +56,8 @@ export const getAuditLogs = () => api.get('/audit');
 export const getPlatformStats  = ()          => api.get('/superadmin/stats');
 export const getAllTenants      = ()          => api.get('/superadmin/tenants');
 export const toggleTenant      = (id)        => api.patch(`/superadmin/tenants/${id}/toggle`);
-export const freezeTenant      = (id)        => api.patch(`/superadmin/tenants/${id}/freeze`);
-export const updateTenantPlan  = (id, plan)  => api.patch(`/superadmin/tenants/${id}/plan`, { plan });
+// export const freezeTenant      = (id)        => api.patch(`/superadmin/tenants/${id}/freeze`);
+// export const updateTenantPlan  = (id, plan)  => api.patch(`/superadmin/tenants/${id}/plan`, { plan });
 export const deleteTenant      = (id)        => api.delete(`/superadmin/tenants/${id}`);
 
 export default api;
