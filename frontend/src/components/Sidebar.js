@@ -40,7 +40,6 @@ export default function Sidebar({ currentPage, setCurrentPage, onLogout }) {
         <div className="logo-icon">SQ</div>
         <div>
           <span className="logo-text">StockIQ</span>
-          <span className="logo-sub">Cloud</span>
         </div>
       </div>
 

@@ -110,8 +110,8 @@ export default function Settings() {
           <div className="settings-card-header">
             <span className="settings-icon">💎</span>
             <div>
-              <h3>Subscription & System</h3>
-              <p>Your current plan and system information</p>
+              <h3>Company Information</h3>
+              <p>Your current info and system information</p>
             </div>
           </div>
 
@@ -145,8 +145,6 @@ export default function Settings() {
               { key: 'Username',     val: user?.username                    },
               { key: 'Email',        val: user?.email                       },
               { key: 'Platform',     val: 'StockIQ Cloud v2.0'             },
-              { key: 'Backend',      val: 'Node.js + Express'              },
-              { key: 'Database',     val: 'MongoDB Atlas'                  },
             ].map(row => (
               <div className="info-row" key={row.key}>
                 <span className="info-key">{row.key}</span>

@@ -61,13 +61,7 @@
   background-clip: text;
 }
 
-.logo-sub {
-  display: block;
-  font-size: 0.65rem;
-  color: var(--text-muted);
-  letter-spacing: 1px;
-  text-transform: uppercase;
-}
+
 
 /* ── NAVIGATION ─────────────────────────────────────────────────────── */
 .sidebar-nav {
